@@ -35,10 +35,14 @@ facebook_metrics = fetch_ucirepo(id=368)
 X = facebook_metrics.data.features.copy()
 y = facebook_metrics.data.targets.copy()
 
+# %%
+X.info() 
 
 # %%
 # Combine for easier exploration, using concat to keep features and target together
-df = ...
+df = pd.concat([X,y], axis=1)
+# add a column with axis 1
+df.head()
 
 # =============================================================================
 # SECTION 1: Kernel Density Plot
@@ -48,12 +52,16 @@ df = ...
 # Use it to understand the shape and spread of a distribution before modeling.
 # %%
 # The raw distribution is heavily right-skewed — a common problem in regression.
-df[
+df["Total Interactions"].plot.kde(color='red')
+plt.title("Kernel Density Plot of Total Interactions")
+# if featues are highly skewed, when using in linear fashion, won't work well
+# convert to arc sin to be used in linear fit better because outliars are more condensed 
 
 # %%
 
 # Let's also look at Page total likes
-df[
+df['Page total likes'].plot.kde(color='purple')
+plt.title('Kernel Density Plot of Page Total Likes')
 
 # KEY POINT: Skewed distributions can violate regression assumptions.
 # We'll address this with log/arcsinh transformations in Section 5.
@@ -65,18 +73,33 @@ df[
 # We convert them to binary (0/1) indicator columns — called dummy variables.
 # pd.get_dummies() does this automatically.
 
+# drop one level and use it as refrence
+# drop a variable, when dummies get used into equation, used in refrence to the dummy we dropped
+
 # %%
 
 # Value counts
-print(df
+print(df['Type'].value_counts())
+print(df['Category'].value_counts())
+
 
 # %%
 # One-hot encode 'Type' and 'Category' (creates new columns for each level), 
 # replace in the df, using pandas's get_dummies, four attributes, df, columns to encode, 
 # drop_first=True to avoid dummy variable trap, and prefix to add a prefix to the new columns
-df = pd.get_dummies(...
-                
+help((pd.get_dummies))
+df = pd.get_dummies(df, columns=['Type', 'Category'], drop_first=True, prefix=['Ty', 'Cat'])
+# drop first becuase need to guard against each variable contributing individually
+# we we do dummies where we take a single variable and spin it to 3 variables
+# leave it like that, we can perfectly predict what it will be based on eachother
+# presence of the other 2 predicts the 3rd so this is perfect multocorrelinearity
+# drop one level and that becomes refrence level
+# with race, white level gets dropped bc has highest population and other race categories, that coefficient is the increase or decrease in that slope as compared to the white population
+# not bythemselves, now in compared to what we dropped
+# avoid multocorrelinearity 
 
+
+# %% 
 # =============================================================================
 # SECTION 3: Regression WITHOUT an Intercept in sklearn
 # =============================================================================
@@ -89,21 +112,25 @@ df = pd.get_dummies(...
 df.info()
 
 # %%
-# Simple example: predict Total Interactions from Page total likes
-X_simple = df[  # sklearn expects 2D array for features
-y_target = df[
+# Simple example: predict Total Interactions from Page total likes, convert to numpy
+X_simple = df['Page total likes'].values.reshape(-1,1)  # sklearn expects 2D array for features
+# changes it to numpy array, will look the same but saved as array, not data frame 
+y_target = df['Total Interactions']
 
+# %% 
 
-# With intercept (default), fit.intercept=true/false, (then).fit
-model_with = LinearRegression
+# With intercept (default), fit_intercept=true/false, (then).fit
+model_with = LinearRegression(fit_intercept=True).fit(X_simple, y_target)
 # Without intercept
-model_without = LinearRegression(
+model_without = LinearRegression(fit_intercept=False).fit(X_simple, y_target)
 
-print(coefficients
+print(f"With Intercept: Coefficient = {model_with.coef_[0]:.4f}, Intercept = {model_with.intercept_:.2f}, R^2 = {model_with.score(X_simple, y_target):.4f}")
+print(f"Without Intercept: Coefficient = {model_without.coef_[0]:.4f}, Intercept = {model_without.intercept_:.2f}, R^2 = {model_without.score(X_simple, y_target):.4f}")
 
 # KEY POINT: Unless your domain knowledge justifies it, always keep the intercept.
 # Forcing through the origin biases the slope estimate when y != 0 at x=0.
 
+# %% 
 # =============================================================================
 # SECTION 4: Multivariate Regression
 # =============================================================================
@@ -120,19 +147,26 @@ print(coefficients
 
 corr_matrix = df.corr()
 corr_with_target = corr_matrix['Total Interactions'].abs().sort_values(ascending=False)
+# rank them based on correlation 
 
+# %%
+# select some kinda middle of the road features
+numeric_features = corr_with_target[5:11].index.tolist()  # Exclude the target variable itself   
+# index middle ones called numeric_features which are used for regression
 
+# now you try pick some real terrible variables and see what happens
+
+# %% 
 # visualize the correlations with a matrix plot
 plt.figure(figsize=(8, 6))
 sns.heatmap(corr_matrix[numeric_features + ['Total Interactions']], annot=True, cmap='coolwarm', center=0)
 plt.title('Correlation Matrix')
 plt.show()
 
-# %%
-# select some kinda middle of the road features
-numeric_features = corr_with_target[5:11].index.tolist()  # Exclude the target variable itself   
+# 1 is perfectly correlated 
 
-# now you try pick some real terrible variables and see what happens
+# %%
+corr_with_target.head()
 
 # %%
 df_mv = df[numeric_features + ['Total Interactions']].dropna()
