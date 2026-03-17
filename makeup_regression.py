@@ -334,3 +334,67 @@ print(f"R² Score: {r2:.4f}")
 print(f"Range of Total Interactions in Test Set: {y_test.min()} to {y_test.max()}")
 
 # %%
+# DEMO: When Polynomial Features Make Sense
+# Fabricated example: Facebook-style post engagement by hour of day
+# The true relationship is a curve — linear regression misses it entirely.
+
+np.random.seed(42)
+# --- Fabricate data ---
+# Simulate 200 posts, each posted at a random hour (0–23)
+hours = np.random.uniform(0, 23, 200)
+
+# %%
+# True relationship: engagement peaks around noon (hour 12), low at night
+# This is a downward parabola centered at 12
+true_engagement = -3 * (hours - 12)**2 + 500 + np.random.normal(0, 40, 200)
+true_engagement = np.clip(true_engagement, 0, None)  # no negative interactions
+
+X = hours.reshape(-1, 1)
+y = true_engagement
+
+# %%
+# --- Fit linear model ---
+lin = LinearRegression().fit(X, y)
+y_pred_lin = lin.predict(X)
+
+# --- Fit polynomial (degree 2) model ---
+poly = PolynomialFeatures(degree=2, include_bias=False)
+X_poly = poly.fit_transform(X)
+pol = LinearRegression().fit(X_poly, y)
+y_pred_poly = pol.predict(X_poly)
+
+# %%
+# --- Plot 1: Data + both model fits ---
+hour_range = np.linspace(0, 23, 300).reshape(-1, 1)
+fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+
+axes[0].scatter(hours, y, alpha=0.4, color='steelblue', label='Observed posts')
+axes[0].plot(hour_range, lin.predict(hour_range), color='red', lw=2, label='Linear fit')
+axes[0].plot(hour_range, pol.predict(poly.transform(hour_range)),
+             color='green', lw=2, label='Polynomial fit (degree 2)')
+axes[0].set_xlabel('Post Hour (0 = midnight, 12 = noon)')
+axes[0].set_ylabel('Total Interactions')
+axes[0].set_title('Linear vs. Polynomial Fit')
+axes[0].legend()
+
+# --- Plot 2: Residuals — the real diagnostic ---
+# A good fit has residuals scattered randomly around zero (no pattern)
+resid_lin  = y - y_pred_lin
+resid_poly = y - y_pred_poly
+
+axes[1].scatter(y_pred_lin,  resid_lin,  alpha=0.4, color='red',   label='Linear residuals')
+axes[1].scatter(y_pred_poly, resid_poly, alpha=0.4, color='green', label='Poly residuals')
+axes[1].axhline(0, color='black', lw=1, linestyle='--')
+axes[1].set_xlabel('Predicted Values')
+axes[1].set_ylabel('Residuals')
+axes[1].set_title('Residual Plot — Look for the U-shape in linear')
+axes[1].legend()
+
+plt.tight_layout()
+plt.show()
+
+# --- R² comparison ---
+print(f"Linear    R²: {lin.score(X, y):.4f}")
+print(f"Polynomial R²: {pol.score(X_poly, y):.4f}")
+
+# %%
