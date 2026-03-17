@@ -1,7 +1,6 @@
 # %%
 
 
-
 # ============================================================================
 # Regression Overview — In-Class Live Coding Example
 # Dataset: Facebook Performance Metrics (UCI ML Repo ID 368)
@@ -143,42 +142,50 @@ print(f"Without Intercept: Coefficient = {model_without.coef_[0]:.4f}, Intercept
 
 # %%
 # Select a handful of numeric features, that are most correlated with Total Interactions
+# select some kinda middle of the road features
+numeric_features = df.select_dtypes(include=[np.number])
+
+
+# %% 
 # correlation matrix
 
-corr_matrix = df.corr()
+corr_matrix = numeric_features.corr('pearson')
 corr_with_target = corr_matrix['Total Interactions'].abs().sort_values(ascending=False)
+# higher correlated
+# correlations for features above 92, worried about multicorrelinearity 
+
 # rank them based on correlation 
 
-# %%
-# select some kinda middle of the road features
-numeric_features = corr_with_target[5:11].index.tolist()  # Exclude the target variable itself   
-# index middle ones called numeric_features which are used for regression
+# %% 
+corr_with_target.head()
 
-# now you try pick some real terrible variables and see what happens
+
+# %%
+# Select some kinda middle of the road feautres
+m1r_features = corr_with_target[5:11].index.tolist() # exclude the target variable 
+# selecting features to use that have less correlation but high, passing to list to pull those features out and create new dataset  
+
+# Now pick some real terrible vairables are see what happens 
 
 # %% 
 # visualize the correlations with a matrix plot
-plt.figure(figsize=(8, 6))
-sns.heatmap(corr_matrix[numeric_features + ['Total Interactions']], annot=True, cmap='coolwarm', center=0)
+sns.heatmap(corr_matrix[m1r_features + ['Total Interactions']], annot=True, cmap='coolwarm', center=0)
 plt.title('Correlation Matrix')
 plt.show()
 
 # 1 is perfectly correlated 
 
 # %%
-corr_with_target.head()
+df_mv = df[m1r_features + ['Total Interactions']].dropna()
 
-# %%
-df_mv = df[numeric_features + ['Total Interactions']].dropna()
-
-X_mv = df_mv[numeric_features]
+X_mv = df_mv[m1r_features]
 y_mv = df_mv['Total Interactions']
 
 # %%
 model_mv = LinearRegression().fit(X_mv, y_mv)
 
 
-coef_df = pd.DataFrame({'Feature': numeric_features, 'Coefficient': model_mv.coef_})
+coef_df = pd.DataFrame({'Feature': m1r_features, 'Coefficient': model_mv.coef_})
 print(coef_df.to_string(index=False))
 
 print(f"\nIntercept: {model_mv.intercept_:.2f}")
@@ -187,6 +194,7 @@ print(f"R²: {model_mv.score(X_mv, y_mv):.4f}")
 # KEY POINT: R² tells us the fraction of variance in y explained by the model.
 # A low R² here suggests the linear numeric features alone are not very informative.
 
+# %% 
 # =============================================================================
 # SECTION 5: Log and arcsinh Transformations of Feature Variables
 # =============================================================================
@@ -234,6 +242,7 @@ print(coef_df_trans.to_string(index=False))
 print(f"\nIntercept: {model_trans.intercept_:.2f}")
 print(f"R²: {model_trans.score(X_trans, y_trans):.4f}")
 
+# %%
 # =============================================================================
 # SECTION 6: Polynomial Features from sklearn
 # =============================================================================
@@ -278,6 +287,7 @@ for degree in [1, 2, 3]:
 # KEY POINT: Higher degree is not always better — watch for overfitting.
 # Use train/test split (or cross-validation) to compare out-of-sample performance.
 
+# %% 
 # =============================================================================
 # SECTION 8: True vs. Predicted Values Plot with Train/Test Split
 # =============================================================================
@@ -293,7 +303,7 @@ for degree in [1, 2, 3]:
 
 # %%
 # Use the same features as the multivariate regression listed in the numeric feature list
-X_final = df[numeric_features].dropna()
+X_final = df[m1r_features].dropna()
 y_final = df.loc[X_final.index, 'Total Interactions']
 X_train, X_test, y_train, y_test = train_test_split(
     X_final, y_final, test_size=0.2, random_state=42
