@@ -3,9 +3,23 @@ Text File for Q0
 Q0:  Please answer the following questions in your own words.
 
 1. What makes a model "linear"? "Linear" in what?
-2. How do you interpret the coefficient for a dummy/one-hot-encoded variable? (This is a trick question, and the trick involves how you handle the intercept of the model.) There's further explanation at the end of this document, if needed.
-3. Can linear regression be used for classification? Explain why, or why not.
-4. If you have a high accuracy on training but low on testing, what might be the problem? It also might be you see a pattern in the residuals. 
-5. Review this page: [Non-Linear with Linear](https://inria.github.io/scikit-learn-mooc/python_scripts/linear_regression_non_linear_link.html)  What are two ways to incorporate nonlinear relationships between your target/response/dependent/outcome variable $y$ and your features/control/response/independent variables x?
-6. What is the interpretation of the intercept? A slope coefficient for a variable? The coefficient for a dummy/one-hot-encoded variable?
+A model is linear because it is linear in the parameters, B coefficients. This means tha tthe model is a linear combination of all the coefficients, even if the variables are transformed.
 
+2. How do you interpret the coefficient for a dummy/one-hot-encoded variable? (This is a trick question, and the trick involves how you handle the intercept of the model.) There's further explanation at the end of this document, if needed.
+The coefficient for a dummy/one-hot-encoded variable is interpreted relative to the one dropped aka the baseline category when intercept = True. For example, if the Bronx is the baseline and the coefficient for Manhattan is 107, this means that being in Manhattan increases the price by $107 compared to the Bronx.
+
+3. Can linear regression be used for classification? Explain why, or why not.
+No becuase linear regression predicts continous numeric values rahter than discrete categories. Also it struggles with classgfiication because it is sensitive to outliers.
+
+4. If you have a high accuracy on training but low on testing, what might be the problem? It also might be you see a pattern in the residuals. 
+The problem might be overfitting since it is just memorizing training data instead of recognizing patterns. If there is a pattern in residuals then this could mean that the model is missing important relationships betweeen variables.
+
+5. Review this page: [Non-Linear with Linear](https://inria.github.io/scikit-learn-mooc/python_scripts/linear_regression_non_linear_link.html)  What are two ways to incorporate nonlinear relationships between your target/response/dependent/outcome variable y and your features/control/response/independent variables x?
+I reviewd the page and it said to use sklearning.preprocessing.PolynomialFeatures so to add polynomial terms or to use kernel methods.
+1. PolynomialFeatures(degree=3, include_bias=False)
+2. SVR(kernel="poly")
+
+6. What is the interpretation of the intercept? A slope coefficient for a variable? The coefficient for a dummy/one-hot-encoded variable?
+The intercept is the predicted value of y when all variables are 0. 
+The slope coefficient for a variable is like a one-unit increase in x leave to a B change in y.
+The coefficient for a dummy/one-hot-endoced variable is the differrence in y between that category and the baseline category that was dropped with the dummy variable.
